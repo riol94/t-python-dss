@@ -6,14 +6,15 @@ from auth_svc import access
 from storage import util
 
 server = Flask(__name__)
-server.config['MONGO_URI'] = "mongodb://host.minikube.internal:27017/videos" #os.environ.get('MONGO_URI')
+server.config['MONGO_URI'] = "mongodb://host.minikube.internal:27017/videos"  #os.environ.get('MONGO_URI')
 
 mongo = PyMongo(server)
-fd = gridfs.GridFS(mongo.db)
+fs = gridfs.GridFS(mongo.db)
 connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
-@server.route("login", methods=['POST'])
+
+@server.route("/login", methods=['POST'])
 def login():
     token, err = access.login(request)
     if not err:
@@ -21,12 +22,13 @@ def login():
     else:
         return err
 
-@server.route("upload", methods=['POST'])
+
+@server.route("/upload", methods=['POST'])
 def upload():
     access, err = validate.token(request)
     access = json.loads(access)
     if access["admin"]:
-        if len(request.files) != 1 :
+        if len(request.files) != 1:
             return "Exactly 1 file is required", 400
 
         for _, f in request.files.items():
@@ -36,3 +38,13 @@ def upload():
         return "success", 200
     else:
         return "not authorized", 401
+
+
+@server.route("/download", methods=['GET'])
+def download():
+    # access, err = validate.token(request)
+    pass
+
+
+if __name__ == '__main__':
+    server.run(host='0.0.0.0', port=8080)
